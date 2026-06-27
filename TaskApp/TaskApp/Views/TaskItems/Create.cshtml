@@ -1,0 +1,62 @@
+@model TaskApp.Models.TaskItem
+@using TaskApp.Models
+
+@{
+    ViewData["Title"] = "Create Task";
+    var users = ViewBag.Users as IEnumerable<User> ?? Enumerable.Empty<User>();
+    var projects = ViewBag.Projects as IEnumerable<Project> ?? Enumerable.Empty<Project>();
+}
+
+<h2>Create Task</h2>
+
+<form asp-action="Create" method="post">
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+    <div class="mb-3">
+        <label asp-for="Title" class="form-label"></label>
+        <input asp-for="Title" class="form-control" />
+        <span asp-validation-for="Title" class="text-danger"></span>
+    </div>
+    <div class="mb-3">
+        <label asp-for="Description" class="form-label"></label>
+        <textarea asp-for="Description" class="form-control"></textarea>
+    </div>
+    <div class="mb-3">
+        <label asp-for="Status" class="form-label"></label>
+        <select asp-for="Status" asp-items="Html.GetEnumSelectList<TaskApp.Models.TaskStatus>()" class="form-select"></select>
+    </div>
+    <div class="mb-3">
+        <label asp-for="Priority" class="form-label"></label>
+        <select asp-for="Priority" asp-items="Html.GetEnumSelectList<Priority>()" class="form-select"></select>
+    </div>
+    <div class="mb-3">
+        <label asp-for="DueDate" class="form-label"></label>
+        <input asp-for="DueDate" type="date" class="form-control" />
+        <span asp-validation-for="DueDate" class="text-danger"></span>
+    </div>
+    <div class="mb-3">
+        <label asp-for="OwnerId" class="form-label">Owner</label>
+        <select asp-for="OwnerId" class="form-select">
+            <option value="">— select owner —</option>
+            @foreach (var u in users)
+            {
+                <option value="@u.Id">@u.Name</option>
+            }
+        </select>
+        <span asp-validation-for="OwnerId" class="text-danger"></span>
+    </div>
+    <div class="mb-3">
+        <label asp-for="ProjectId" class="form-label">Project</label>
+        <select asp-for="ProjectId" class="form-select">
+            <option value="">— select project —</option>
+            @foreach (var p in projects)
+            {
+                <option value="@p.Id">@p.Name</option>
+            }
+        </select>
+        <span asp-validation-for="ProjectId" class="text-danger"></span>
+    </div>
+
+    <button type="submit" class="btn btn-primary">Create</button>
+    <a asp-action="Index" class="btn btn-link">Cancel</a>
+</form>

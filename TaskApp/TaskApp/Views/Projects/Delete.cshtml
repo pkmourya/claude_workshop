@@ -1,0 +1,14 @@
+@model TaskApp.Models.Project
+
+@{
+    ViewData["Title"] = "Delete Project";
+}
+
+<h2>Delete Project</h2>
+<p>Are you sure you want to delete project <strong>@Model.Name</strong>? All tasks in this project will also be deleted.</p>
+
+<form asp-action="Delete" method="post">
+    <input asp-for="Id" type="hidden" />
+    <button type="submit" class="btn btn-danger">Delete</button>
+    <a asp-action="Index" class="btn btn-link">Cancel</a>
+</form>

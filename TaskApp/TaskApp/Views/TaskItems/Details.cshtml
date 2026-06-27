@@ -1,0 +1,27 @@
+@model TaskApp.Models.TaskItem
+
+@{
+    ViewData["Title"] = "Task Details";
+}
+
+<h2>Task Details</h2>
+
+<dl class="row">
+    <dt class="col-sm-2">Title</dt>
+    <dd class="col-sm-10">@Model.Title</dd>
+    <dt class="col-sm-2">Description</dt>
+    <dd class="col-sm-10">@Model.Description</dd>
+    <dt class="col-sm-2">Status</dt>
+    <dd class="col-sm-10">@Model.Status</dd>
+    <dt class="col-sm-2">Priority</dt>
+    <dd class="col-sm-10">@Model.Priority</dd>
+    <dt class="col-sm-2">Due Date</dt>
+    <dd class="col-sm-10">@(Model.DueDate?.ToString("yyyy-MM-dd") ?? "—")</dd>
+    <dt class="col-sm-2">Owner</dt>
+    <dd class="col-sm-10">@Model.Owner?.Name</dd>
+    <dt class="col-sm-2">Project</dt>
+    <dd class="col-sm-10">@Model.Project?.Name</dd>
+</dl>
+
+<a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-secondary">Edit</a>
+<a asp-action="Index" class="btn btn-link">Back to List</a>
