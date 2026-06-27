@@ -1,3 +1,5 @@
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 using Microsoft.AspNetCore.Mvc;
 using TaskApp.Models;
 using TaskApp.Services;
@@ -15,6 +17,10 @@ public class ProjectsController : Controller
         _projectService = projectService;
         _userService = userService;
     }
+
+    private int CurrentUserId =>
+        int.Parse(User.FindFirstValue(JwtRegisteredClaimNames.Sub)
+            ?? throw new InvalidOperationException("Sub claim missing from token."));
 
     public async Task<IActionResult> Index()
     {
@@ -95,5 +101,20 @@ public class ProjectsController : Controller
     {
         await _projectService.DeleteAsync(id);
         return RedirectToAction(nameof(Index));
+    }
+
+    // Serves the JS-powered task board at /Projects/View/{id}
+    [ActionName("View")]
+    public async Task<IActionResult> TaskBoard(int id)
+    {
+        var project = await _projectService.GetByIdAsync(id);
+        if (project is null) return NotFound();
+        if (project.OwnerId != CurrentUserId) return NotFound();
+
+        return View("View", new ProjectViewModel
+        {
+            ProjectId = project.Id,
+            ProjectName = project.Name
+        });
     }
 }

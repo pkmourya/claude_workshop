@@ -1,0 +1,52 @@
+@model TaskApp.Models.RegisterRequest
+
+@{
+    ViewData["Title"] = "Create account";
+    Layout = "_Layout";
+}
+
+<div class="row justify-content-center mt-5">
+    <div class="col-md-5">
+        <div class="card shadow-sm">
+            <div class="card-body p-4">
+                <h3 class="card-title mb-4">Create account</h3>
+
+                <form asp-action="Register" asp-controller="Account" method="post">
+                    <div asp-validation-summary="ModelOnly" class="alert alert-danger d-none" id="summaryBlock"></div>
+
+                    <div class="mb-3">
+                        <label asp-for="Name" class="form-label fw-semibold">Name</label>
+                        <input asp-for="Name" class="form-control" placeholder="Your name" />
+                        <span asp-validation-for="Name" class="text-danger small"></span>
+                    </div>
+                    <div class="mb-3">
+                        <label asp-for="Email" class="form-label fw-semibold">Email</label>
+                        <input asp-for="Email" type="email" class="form-control" placeholder="you@example.com" />
+                        <span asp-validation-for="Email" class="text-danger small"></span>
+                    </div>
+                    <div class="mb-4">
+                        <label asp-for="Password" class="form-label fw-semibold">Password</label>
+                        <input asp-for="Password" type="password" class="form-control" placeholder="Min. 8 characters" />
+                        <span asp-validation-for="Password" class="text-danger small"></span>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100">Register</button>
+                </form>
+
+                <hr class="my-3" />
+                <p class="text-center mb-0 small">
+                    Already have an account?
+                    <a asp-action="Login" asp-controller="Account">Sign in</a>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    // Show summary block only when it has content
+    var summary = document.getElementById('summaryBlock');
+    if (summary && summary.querySelector('ul, p')) summary.classList.remove('d-none');
+</script>
+}

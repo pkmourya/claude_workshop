@@ -1,0 +1,39 @@
+@model TaskApp.Models.LoginRequest
+
+@{
+    ViewData["Title"] = "Sign in";
+    Layout = "_Layout";
+}
+
+<div class="row justify-content-center mt-5">
+    <div class="col-md-5">
+        <div class="card shadow-sm">
+            <div class="card-body p-4">
+                <h3 class="card-title mb-4">Sign in</h3>
+
+                <form asp-action="Login" asp-controller="Account" method="post">
+                    <div asp-validation-summary="ModelOnly" class="alert alert-danger" id="summaryBlock"></div>
+
+                    <div class="mb-3">
+                        <label asp-for="Email" class="form-label fw-semibold">Email</label>
+                        <input asp-for="Email" type="email" class="form-control" placeholder="you@example.com" autofocus />
+                        <span asp-validation-for="Email" class="text-danger small"></span>
+                    </div>
+                    <div class="mb-4">
+                        <label asp-for="Password" class="form-label fw-semibold">Password</label>
+                        <input asp-for="Password" type="password" class="form-control" placeholder="Password" />
+                        <span asp-validation-for="Password" class="text-danger small"></span>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100">Sign in</button>
+                </form>
+
+                <hr class="my-3" />
+                <p class="text-center mb-0 small">
+                    Don't have an account?
+                    <a asp-action="Register" asp-controller="Account">Register</a>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>

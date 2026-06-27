@@ -1,0 +1,301 @@
+@model TaskApp.Models.ProjectViewModel
+
+@{
+    ViewData["Title"] = Model.ProjectName;
+    Layout = "_Layout";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+        <a asp-controller="Dashboard" asp-action="Index" class="text-muted small">← Dashboard</a>
+        <h2 class="mb-0">@Model.ProjectName</h2>
+    </div>
+    <button class="btn btn-primary" id="btnNewTask">+ New Task</button>
+</div>
+
+{{!-- Filters --}}
+<div class="row g-2 mb-4">
+    <div class="col-auto">
+        <label class="col-form-label-sm text-muted me-1">Status</label>
+        <select id="filterStatus" class="form-select form-select-sm d-inline-block w-auto">
+            <option value="">All</option>
+            <option value="Todo">Todo</option>
+            <option value="InProgress">In Progress</option>
+            <option value="Done">Done</option>
+        </select>
+    </div>
+    <div class="col-auto">
+        <label class="col-form-label-sm text-muted me-1">Priority</label>
+        <select id="filterPriority" class="form-select form-select-sm d-inline-block w-auto">
+            <option value="">All</option>
+            <option value="Low">Low</option>
+            <option value="Medium">Medium</option>
+            <option value="High">High</option>
+        </select>
+    </div>
+</div>
+
+<div id="tasks-container">
+    <div class="text-center text-muted py-5">
+        <div class="spinner-border spinner-border-sm me-2" role="status"></div>Loading tasks…
+    </div>
+</div>
+
+{{!-- Create / Edit modal --}}
+<div class="modal fade" id="taskModal" tabindex="-1" aria-labelledby="modalTitle" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalTitle">New Task</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="modalError" class="alert alert-danger d-none" role="alert"></div>
+                <input type="hidden" id="editTaskId" />
+
+                <div class="mb-3">
+                    <label for="taskTitle" class="form-label fw-semibold">Title <span class="text-danger">*</span></label>
+                    <input type="text" id="taskTitle" class="form-control" maxlength="300" />
+                </div>
+                <div class="mb-3">
+                    <label for="taskDescription" class="form-label fw-semibold">Description</label>
+                    <textarea id="taskDescription" class="form-control" rows="2"></textarea>
+                </div>
+                <div class="mb-3 d-none" id="statusRow">
+                    <label for="taskStatus" class="form-label fw-semibold">Status</label>
+                    <select id="taskStatus" class="form-select">
+                        <option value="Todo">Todo</option>
+                        <option value="InProgress">In Progress</option>
+                        <option value="Done">Done</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label for="taskPriority" class="form-label fw-semibold">Priority</label>
+                    <select id="taskPriority" class="form-select">
+                        <option value="Low">Low</option>
+                        <option value="Medium" selected>Medium</option>
+                        <option value="High">High</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label for="taskDueDate" class="form-label fw-semibold">Due Date</label>
+                    <input type="date" id="taskDueDate" class="form-control" />
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="btnSaveTask">Save</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+var projectId = @Model.ProjectId;
+var bsModal   = new bootstrap.Modal(document.getElementById('taskModal'));
+
+// ── Helpers ──────────────────────────────────────────────────────────────
+
+function esc(s) {
+    return String(s == null ? '' : s)
+        .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+        .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function statusLabel(s) { return {Todo:'Todo',InProgress:'In Progress',Done:'Done'}[s] ?? s; }
+
+function priorityClass(p) {
+    return {Low:'bg-secondary',Medium:'bg-warning text-dark',High:'bg-danger'}[p] ?? 'bg-secondary';
+}
+
+function showModalError(msg) {
+    var el = document.getElementById('modalError');
+    el.textContent = msg;
+    el.classList.remove('d-none');
+}
+
+function parseApiErrors(body) {
+    if (body && body.errors)
+        return Object.values(body.errors).flat().join(' ');
+    return body && body.error ? body.error : 'An unexpected error occurred.';
+}
+
+// ── Data loading ─────────────────────────────────────────────────────────
+
+async function loadTasks() {
+    var status   = document.getElementById('filterStatus').value;
+    var priority = document.getElementById('filterPriority').value;
+    var qs = new URLSearchParams();
+    if (status)   qs.set('status',   status);
+    if (priority) qs.set('priority', priority);
+
+    var res = await fetch('/api/projects/' + projectId + '/tasks?' + qs);
+    if (res.status === 401) { window.location.href = '/Account/Login'; return; }
+    if (!res.ok)  { renderTableError('Failed to load tasks.'); return; }
+
+    renderTasks(await res.json());
+}
+
+function renderTasks(tasks) {
+    var container = document.getElementById('tasks-container');
+    if (!tasks.length) {
+        container.innerHTML = '<p class="text-muted">No tasks match the current filters.</p>';
+        return;
+    }
+
+    var rows = tasks.map(function(t) {
+        var statusOpts = ['Todo','InProgress','Done'].map(function(s) {
+            return '<option value="' + s + '"' + (t.status === s ? ' selected' : '') + '>' +
+                   statusLabel(s) + '</option>';
+        }).join('');
+
+        return '<tr>' +
+            '<td>' + esc(t.title) + '</td>' +
+            '<td class="text-muted small">' + esc(t.description) + '</td>' +
+            '<td>' +
+                '<select class="form-select form-select-sm w-auto" ' +
+                        'data-id="' + t.id + '" onchange="quickStatus(this)">' +
+                statusOpts +
+                '</select>' +
+            '</td>' +
+            '<td><span class="badge ' + priorityClass(t.priority) + '">' + esc(t.priority) + '</span></td>' +
+            '<td class="text-nowrap">' + (t.dueDate ? t.dueDate.slice(0,10) : '—') + '</td>' +
+            '<td class="text-nowrap">' +
+                '<button class="btn btn-sm btn-outline-secondary me-1" onclick="openEdit(' + t.id + ')">Edit</button>' +
+                '<button class="btn btn-sm btn-outline-danger" onclick="deleteTask(' + t.id + ')">Delete</button>' +
+            '</td>' +
+        '</tr>';
+    }).join('');
+
+    container.innerHTML =
+        '<div class="table-responsive">' +
+        '<table class="table table-hover align-middle mb-0">' +
+        '<thead class="table-light"><tr>' +
+        '<th>Title</th><th>Description</th><th>Status</th>' +
+        '<th>Priority</th><th>Due Date</th><th></th>' +
+        '</tr></thead>' +
+        '<tbody>' + rows + '</tbody>' +
+        '</table></div>';
+}
+
+function renderTableError(msg) {
+    document.getElementById('tasks-container').innerHTML =
+        '<div class="alert alert-danger">' + esc(msg) + '</div>';
+}
+
+// ── Quick status change ───────────────────────────────────────────────────
+
+async function quickStatus(selectEl) {
+    var taskId    = selectEl.dataset.id;
+    var newStatus = selectEl.value;
+
+    var getRes = await fetch('/api/tasks/' + taskId);
+    if (!getRes.ok) { selectEl.value = selectEl.querySelector('[selected]')?.value; return; }
+    var task = await getRes.json();
+
+    var putRes = await fetch('/api/tasks/' + taskId, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            title: task.title,
+            description: task.description ?? null,
+            status: newStatus,
+            priority: task.priority,
+            dueDate: task.dueDate ?? null
+        })
+    });
+
+    if (!putRes.ok) {
+        alert('Failed to update status.');
+        loadTasks();
+    }
+}
+
+// ── Create ────────────────────────────────────────────────────────────────
+
+function openCreate() {
+    document.getElementById('modalTitle').textContent  = 'New Task';
+    document.getElementById('editTaskId').value        = '';
+    document.getElementById('taskTitle').value         = '';
+    document.getElementById('taskDescription').value   = '';
+    document.getElementById('taskPriority').value      = 'Medium';
+    document.getElementById('taskDueDate').value       = '';
+    document.getElementById('statusRow').classList.add('d-none');
+    document.getElementById('modalError').classList.add('d-none');
+    bsModal.show();
+}
+
+// ── Edit ──────────────────────────────────────────────────────────────────
+
+async function openEdit(id) {
+    var res = await fetch('/api/tasks/' + id);
+    if (!res.ok) { alert('Could not load task.'); return; }
+    var t = await res.json();
+
+    document.getElementById('modalTitle').textContent  = 'Edit Task';
+    document.getElementById('editTaskId').value        = t.id;
+    document.getElementById('taskTitle').value         = t.title;
+    document.getElementById('taskDescription').value   = t.description ?? '';
+    document.getElementById('taskStatus').value        = t.status;
+    document.getElementById('taskPriority').value      = t.priority;
+    document.getElementById('taskDueDate').value       = t.dueDate ? t.dueDate.slice(0,10) : '';
+    document.getElementById('statusRow').classList.remove('d-none');
+    document.getElementById('modalError').classList.add('d-none');
+    bsModal.show();
+}
+
+// ── Save ──────────────────────────────────────────────────────────────────
+
+document.getElementById('btnSaveTask').addEventListener('click', async function() {
+    var taskId      = document.getElementById('editTaskId').value;
+    var title       = document.getElementById('taskTitle').value.trim();
+    var description = document.getElementById('taskDescription').value.trim() || null;
+    var status      = document.getElementById('taskStatus').value;
+    var priority    = document.getElementById('taskPriority').value;
+    var dueDate     = document.getElementById('taskDueDate').value || null;
+
+    document.getElementById('modalError').classList.add('d-none');
+
+    var isEdit = !!taskId;
+    var url    = isEdit ? '/api/tasks/' + taskId : '/api/projects/' + projectId + '/tasks';
+    var method = isEdit ? 'PUT' : 'POST';
+    var body   = isEdit
+        ? { title, description, status, priority, dueDate }
+        : { title, description, priority, dueDate };
+
+    var res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+    });
+
+    if (!res.ok) {
+        var payload = await res.json().catch(function() { return {}; });
+        showModalError(parseApiErrors(payload));
+        return;
+    }
+
+    bsModal.hide();
+    loadTasks();
+});
+
+// ── Delete ────────────────────────────────────────────────────────────────
+
+async function deleteTask(id) {
+    if (!confirm('Delete this task? This cannot be undone.')) return;
+    var res = await fetch('/api/tasks/' + id, { method: 'DELETE' });
+    if (!res.ok) { alert('Delete failed.'); return; }
+    loadTasks();
+}
+
+// ── Wire up events ────────────────────────────────────────────────────────
+
+document.getElementById('btnNewTask').addEventListener('click', openCreate);
+document.getElementById('filterStatus').addEventListener('change', loadTasks);
+document.getElementById('filterPriority').addEventListener('change', loadTasks);
+
+// Initial load
+loadTasks();
+</script>
+}

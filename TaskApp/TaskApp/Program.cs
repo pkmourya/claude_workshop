@@ -26,6 +26,9 @@ builder.Services.AddControllersWithViews(options =>
     // Prevent circular-reference errors when serializing entity graphs
     options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
     options.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
+    // Standard web API conventions: camelCase keys, enums as strings
+    options.JsonSerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
+    options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
 });
 
 // FluentValidation — scans assembly for AbstractValidator<T> subclasses
@@ -109,3 +112,5 @@ app.MapControllerRoute(
     .WithStaticAssets();
 
 app.Run();
+
+public partial class Program { }

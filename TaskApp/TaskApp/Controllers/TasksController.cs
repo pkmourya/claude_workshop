@@ -36,7 +36,7 @@ public class TasksController : ControllerBase
     {
         var project = await _projectService.GetByIdAsync(projectId);
         if (project is null) return NotFound(new { error = "Project not found." });
-        if (project.OwnerId != CurrentUserId) return Forbid();
+        if (project.OwnerId != CurrentUserId) return NotFound(new { error = "Not found." });
 
         var tasks = await _taskService.GetByProjectAsync(projectId, status, priority);
         return Ok(tasks);
@@ -50,7 +50,7 @@ public class TasksController : ControllerBase
 
         var project = await _projectService.GetByIdAsync(projectId);
         if (project is null) return NotFound(new { error = "Project not found." });
-        if (project.OwnerId != CurrentUserId) return Forbid();
+        if (project.OwnerId != CurrentUserId) return NotFound(new { error = "Not found." });
 
         var taskItem = new TaskItem
         {
@@ -73,7 +73,7 @@ public class TasksController : ControllerBase
     {
         var task = await _taskService.GetByIdAsync(id);
         if (task is null) return NotFound(new { error = "Task not found." });
-        if (task.Project.OwnerId != CurrentUserId) return Forbid();
+        if (task.Project.OwnerId != CurrentUserId) return NotFound(new { error = "Not found." });
 
         return Ok(task);
     }
@@ -86,7 +86,7 @@ public class TasksController : ControllerBase
 
         var task = await _taskService.GetByIdAsync(id);
         if (task is null) return NotFound(new { error = "Task not found." });
-        if (task.Project.OwnerId != CurrentUserId) return Forbid();
+        if (task.Project.OwnerId != CurrentUserId) return NotFound(new { error = "Not found." });
 
         // Apply the update fields; OwnerId/ProjectId are not user-controllable via this endpoint
         task.Title = request.Title;
@@ -105,7 +105,7 @@ public class TasksController : ControllerBase
     {
         var task = await _taskService.GetByIdAsync(id);
         if (task is null) return NotFound(new { error = "Task not found." });
-        if (task.Project.OwnerId != CurrentUserId) return Forbid();
+        if (task.Project.OwnerId != CurrentUserId) return NotFound(new { error = "Not found." });
 
         await _taskService.DeleteAsync(id);
         return NoContent();
