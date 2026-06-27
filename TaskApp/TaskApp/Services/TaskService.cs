@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using TaskApp.Data;
 using TaskApp.Models;
+using TaskStatus = TaskApp.Models.TaskStatus;
 
 namespace TaskApp.Services;
 
@@ -16,9 +17,28 @@ public class TaskService : ITaskService
     public async Task<IEnumerable<TaskItem>> GetAllAsync() =>
         await _db.TaskItems.Include(t => t.Owner).Include(t => t.Project).ToListAsync();
 
+    public async Task<IEnumerable<TaskItem>> GetByProjectAsync(
+        int projectId, TaskStatus? status, Priority? priority)
+    {
+        var query = _db.TaskItems
+            .Include(t => t.Owner)
+            .Where(t => t.ProjectId == projectId)
+            .AsQueryable();
+
+        if (status.HasValue)
+            query = query.Where(t => t.Status == status.Value);
+
+        if (priority.HasValue)
+            query = query.Where(t => t.Priority == priority.Value);
+
+        return await query.ToListAsync();
+    }
+
     public async Task<TaskItem?> GetByIdAsync(int id) =>
-        await _db.TaskItems.Include(t => t.Owner).Include(t => t.Project)
-                           .FirstOrDefaultAsync(t => t.Id == id);
+        await _db.TaskItems
+            .Include(t => t.Owner)
+            .Include(t => t.Project)
+            .FirstOrDefaultAsync(t => t.Id == id);
 
     public async Task<TaskItem> CreateAsync(TaskItem taskItem)
     {

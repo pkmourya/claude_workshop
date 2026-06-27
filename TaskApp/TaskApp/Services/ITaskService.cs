@@ -1,10 +1,12 @@
 using TaskApp.Models;
+using TaskStatus = TaskApp.Models.TaskStatus;
 
 namespace TaskApp.Services;
 
 public interface ITaskService
 {
     Task<IEnumerable<TaskItem>> GetAllAsync();
+    Task<IEnumerable<TaskItem>> GetByProjectAsync(int projectId, TaskStatus? status, Priority? priority);
     Task<TaskItem?> GetByIdAsync(int id);
     Task<TaskItem> CreateAsync(TaskItem taskItem);
     Task<TaskItem?> UpdateAsync(TaskItem taskItem);
