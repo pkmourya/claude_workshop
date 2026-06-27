@@ -1,6 +1,3 @@
-using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
-using TaskApp.Data;
 using TaskApp.Models;
 using TaskApp.Validators;
 using TaskStatus = TaskApp.Models.TaskStatus;
@@ -9,18 +6,6 @@ namespace TaskApp.Tests.Unit;
 
 public class ValidatorTests
 {
-    // ── Helpers ─────────────────────────────────────────────────────────────
-
-    private static AppDbContext CreateDb()
-    {
-        var opts = new DbContextOptionsBuilder<AppDbContext>()
-            .UseInMemoryDatabase(Guid.NewGuid().ToString())
-            .Options;
-        return new AppDbContext(opts);
-    }
-
-    private static RegisterRequestValidator MakeRegisterValidator(AppDbContext db) =>
-        new(db);
 
     // ── CreateTaskRequestValidator ───────────────────────────────────────────
 
@@ -162,56 +147,45 @@ public class ValidatorTests
     }
 
     // ── RegisterRequestValidator ─────────────────────────────────────────────
+    // Duplicate-email enforcement is handled by AuthService, not the validator.
+    // See AuthServiceTests.Register_DuplicateEmail_ReturnsNull for that coverage.
 
     [Fact]
-    public async Task Register_ValidRequest_Passes()
+    public void Register_ValidRequest_Passes()
     {
-        using var db = CreateDb();
-        var v = MakeRegisterValidator(db);
-        var result = await v.ValidateAsync(new RegisterRequest
+        var v = new RegisterRequestValidator();
+        var result = v.Validate(new RegisterRequest
             { Name = "Alice", Email = "alice@test.com", Password = "Password1!" });
         Assert.True(result.IsValid);
     }
 
     [Fact]
-    public async Task Register_DuplicateEmail_Fails()
+    public void Register_PasswordTooShort_Fails()
     {
-        using var db = CreateDb();
-        db.Users.Add(new User
-        {
-            Name         = "Bob",
-            Email        = "bob@test.com",
-            PasswordHash = new PasswordHasher<User>().HashPassword(null!, "x")
-        });
-        await db.SaveChangesAsync();
-
-        var v = MakeRegisterValidator(db);
-        var result = await v.ValidateAsync(new RegisterRequest
-            { Name = "Bob2", Email = "bob@test.com", Password = "Password1!" });
-
-        Assert.False(result.IsValid);
-        Assert.Contains(result.Errors, e => e.PropertyName == "Email");
-    }
-
-    [Fact]
-    public async Task Register_PasswordTooShort_Fails()
-    {
-        using var db = CreateDb();
-        var v = MakeRegisterValidator(db);
-        var result = await v.ValidateAsync(new RegisterRequest
+        var v = new RegisterRequestValidator();
+        var result = v.Validate(new RegisterRequest
             { Name = "Alice", Email = "alice@test.com", Password = "short" });
         Assert.False(result.IsValid);
         Assert.Contains(result.Errors, e => e.PropertyName == "Password");
     }
 
     [Fact]
-    public async Task Register_EmptyName_Fails()
+    public void Register_EmptyName_Fails()
     {
-        using var db = CreateDb();
-        var v = MakeRegisterValidator(db);
-        var result = await v.ValidateAsync(new RegisterRequest
+        var v = new RegisterRequestValidator();
+        var result = v.Validate(new RegisterRequest
             { Name = "", Email = "alice@test.com", Password = "Password1!" });
         Assert.False(result.IsValid);
         Assert.Contains(result.Errors, e => e.PropertyName == "Name");
+    }
+
+    [Fact]
+    public void Register_InvalidEmail_Fails()
+    {
+        var v = new RegisterRequestValidator();
+        var result = v.Validate(new RegisterRequest
+            { Name = "Alice", Email = "not-an-email", Password = "Password1!" });
+        Assert.False(result.IsValid);
+        Assert.Contains(result.Errors, e => e.PropertyName == "Email");
     }
 }

@@ -1,0 +1,22 @@
+# Build artifacts — large binaries Claude doesn't need to read
+bin/
+obj/
+TestResults/
+publish/
+artifacts/
+
+# Package lock files — auto-generated, not useful for understanding code
+project.assets.json
+*.nuget.dgspec.json
+*.nuget.g.props
+*.nuget.g.targets
+project.nuget.cache
+
+# Compiled assemblies and debug symbols
+*.dll
+*.pdb
+*.exe
+
+# IDE metadata
+.vs/
+.idea/
