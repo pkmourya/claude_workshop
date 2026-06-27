@@ -67,8 +67,8 @@ public class AccountController : Controller
         Response.Cookies.Append("auth_token", token, new CookieOptions
         {
             HttpOnly = true,
-            Secure = true,
+            Secure   = Request.IsHttps,
             SameSite = SameSiteMode.Strict,
-            Expires = DateTimeOffset.UtcNow.AddHours(8)
+            Expires  = DateTimeOffset.UtcNow.AddHours(8)
         });
 }

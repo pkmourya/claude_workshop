@@ -81,7 +81,7 @@ builder.Services.AddAuthentication(options =>
             if (!context.Response.HasStarted && context.Request.Headers.Accept.ToString().Contains("text/html"))
             {
                 context.HandleResponse();
-                context.Response.Redirect("/Auth/Login");
+                context.Response.Redirect("/Account/Login");
             }
             return Task.CompletedTask;
         }
